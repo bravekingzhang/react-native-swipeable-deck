@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import {
   Animated,
   PanResponder,
@@ -21,7 +21,7 @@ import {
   SCREEN_WIDTH,
   SWIPE_THRESHOLD,
 } from '../constants/SwipeDeck';
-//TYPES
+
 interface Item {
   id: string;
 }
@@ -48,32 +48,32 @@ type SDProps<T extends Item> = {
   rotationMultiplier?: number;
   rotationRange?: number;
 };
-//END TYPES
 
-export function SwipeDeck<T extends Item>({
-  renderCard,
-  data,
-  onSwipeRight = () => {},
-  onSwipeLeft = () => {},
-  renderNoMoreCards = () => undefined,
-  handleEndReached = () => {},
-  swipeThreshold = SWIPE_THRESHOLD,
-  forceAnimationDuration = FORCE_ANIMATION_DURATION,
-  indentSideMultiplier = INDENT_SIDE_MULTIPLIER,
-  indentTopMultiplier = INDENT_TOP_MULTIPLIER,
-  initialRotation = INITIAL_ROTATION,
-  initialXPosition = INITIAL_X_POSITION,
-  initialYPosition = INITIAL_Y_POSITION,
-  rotationMultiplier = ROTATION_MULTIPLIER,
-  rotationRange = ROTATION_RANGE,
-}: SDProps<T>) {
+const SwipeDeck = forwardRef(<T extends Item>(
+  {
+    renderCard,
+    data,
+    onSwipeRight = () => {},
+    onSwipeLeft = () => {},
+    renderNoMoreCards = () => undefined,
+    handleEndReached = () => {},
+    swipeThreshold = SWIPE_THRESHOLD,
+    forceAnimationDuration = FORCE_ANIMATION_DURATION,
+    indentSideMultiplier = INDENT_SIDE_MULTIPLIER,
+    indentTopMultiplier = INDENT_TOP_MULTIPLIER,
+    initialRotation = INITIAL_ROTATION,
+    initialXPosition = INITIAL_X_POSITION,
+    initialYPosition = INITIAL_Y_POSITION,
+    rotationMultiplier = ROTATION_MULTIPLIER,
+    rotationRange = ROTATION_RANGE,
+  }: SDProps<T>,
+  ref: React.Ref<{ swipeLeft: () => void; swipeRight: () => void }>
+) => {
   const [cardIndex, setCardIndex] = useState(0);
   const [dataChanged, setDataChanged] = useState(false);
 
   const latestValue = useRef(cardIndex);
-
   const position = useRef(new Animated.ValueXY()).current;
-
   latestValue.current = cardIndex;
 
   useLayoutEffect(() => {
@@ -94,6 +94,11 @@ export function SwipeDeck<T extends Item>({
   useEffect(() => {
     cardIndex === data.length && handleEndReached();
   }, [data, cardIndex, handleEndReached]);
+
+  useImperativeHandle(ref, () => ({
+    swipeLeft: () => forceSwipe(Direction.Left),
+    swipeRight: () => forceSwipe(Direction.Right),
+  }));
 
   const panResponder = useRef(
     PanResponder.create({
@@ -207,7 +212,7 @@ export function SwipeDeck<T extends Item>({
   };
 
   return <View>{renderCards()}</View>;
-}
+});
 
 const styles = StyleSheet.create({
   card: {
